@@ -144,19 +144,39 @@ class MazeRobot {
       int changes;
       do {
         changes = 0;
-        // Remove redundant pairs
-        if (optimizedPath.indexOf("LR") >= 0) {
-          optimizedPath.replace("LR", "");
-          changes++;
-        }
-        if (optimizedPath.indexOf("RL") >= 0) {
-          optimizedPath.replace("RL", "");
-          changes++;
-        }
+        // Sliding window optimization
+        optimizedPath = slidingWindow(optimizedPath);
+        changes++;
       } while (changes > 0);
 
       Serial.println("Optimized Path: " + optimizedPath);
       path = optimizedPath;
+    }
+
+    String slidingWindow(String path) {
+      // Optimized path mapping
+      String opt_path[] = {
+        "LBL", "F", // Left + Left -> Forward
+        "LBR", "B", // Left + Right -> Back
+        "RBL", "B", // Right + Left -> Back
+        "LBF", "R", // Left + Back -> Right
+        "RBR", "F", // Right + Back -> Forward
+        "RBF", "L", // Right + Forward -> Left
+        "FBL", "R", // Forward + Left -> Right
+        "FBR", "L", // Forward + Right -> Left
+        "FBF", "B"  // Forward + Forward -> Back
+      };
+
+      for (int i = 0; i < path.length() - 2; i++) {
+        String window = path.substring(i, i + 3);
+        // Check if the window matches any optimized path and replace
+        for (int j = 0; j < sizeof(opt_path) / sizeof(opt_path[0]); j += 2) {
+          if (window == opt_path[j]) {
+            path.replace(window, opt_path[j + 1]);
+          }
+        }
+      }
+      return path;
     }
 
     void executeOptimizedPath() {
