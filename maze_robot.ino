@@ -93,7 +93,6 @@ class MazeRobot {
     void handleEnd() {
       stopRobot();
       Serial.println("Reached endpoint!");
-<<<<<<< HEAD
       Serial.println(path);
     }
 
@@ -101,7 +100,6 @@ class MazeRobot {
       if (obstacleDetected) {
         Serial.println("Obstacle detected!");
         backTurn(); // Treat obstacle like a dead-end and turn around
-=======
       println(path)
     }
 
@@ -128,7 +126,6 @@ class MazeRobot {
       // T-right
       else if (v1 && v2 && h1 && h2 && !h3 && !h4) {
         turnLeft();
->>>>>>> a30b057c44c30682349ee1c6644e7d61114b440b
       }
     }
 
@@ -139,16 +136,13 @@ class MazeRobot {
       if (v1 && !v2 && h1 && h2 && h3 && h4) {
         backTurn();
       }
-<<<<<<< HEAD
       // Left or right turns
       else if ((h1 && h2) || (h2 && h3)) {
         if (h1) turnLeft();
         else turnRight();
-=======
       // Turns
       else if (( h1 && h2) || (h2 && h3)) {
         handleTurn();
->>>>>>> a30b057c44c30682349ee1c6644e7d61114b440b
       }
       // Cross
       else if (v1 && v2 && h1 && h2 && h3 && h4) {
@@ -159,23 +153,6 @@ class MazeRobot {
         moveForward();
       }
     }
-<<<<<<< HEAD
-=======
-
-//    void optimizePath() {
-//      String optimizedPath = path;
-//      optimizedPath.replace("LBL", "F");
-//      optimizedPath.replace("LBR", "B");
-//      optimizedPath.replace("RBL", "B");
-//      optimizedPath.replace("LBF", "R");
-//      optimizedPath.replace("RBR", "F");
-//      optimizedPath.replace("RBF", "L");
-//      optimizedPath.replace("FBL", "R");
-//      optimizedPath.replace("FBR", "L");
-//      optimizedPath.replace("FBF", "B");
-//      Serial.println("Optimized Path: " + optimizedPath);
-//    }
->>>>>>> a30b057c44c30682349ee1c6644e7d61114b440b
 };
 
 MazeRobot robot;
