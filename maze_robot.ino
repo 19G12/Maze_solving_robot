@@ -1,16 +1,21 @@
 #include <AFMotor.h>
 
-// Sensor and Motor Pins
-const int sensorV1 = A0; // Vertical bottom
-const int sensorV2 = A1; // Vertical top
-const int sensorH1 = A2; // Leftmost horizontal
-const int sensorH2 = A3; // Inner left horizontal
-const int sensorH3 = A4; // Inner right horizontal
-const int sensorH4 = A5; // Rightmost horizontal
+// Sensor and Motor Pins (Digital Pins for Raspberry Pi Pico)
+const int sensorV1 = 2;  // Vertical bottom
+const int sensorV2 = 3;  // Vertical top
+const int sensorH1 = 4;  // Leftmost horizontal
+const int sensorH2 = 5;  // Inner left horizontal
+const int sensorH3 = 6;  // Inner right horizontal
+const int sensorH4 = 7;  // Rightmost horizontal
+const int proximitySensorTrig = 8; // Proximity sensor TRIG pin
+const int proximitySensorEcho = 9; // Proximity sensor ECHO pin
 
 // Motor setup
 AF_DCMotor motorLeft(3);  // Left motor (M3)
 AF_DCMotor motorRight(4); // Right motor (M4)
+
+// Constants
+const int OBSTACLE_DISTANCE = 15; // Minimum distance to an obstacle in cm
 
 // Robot class
 class MazeRobot {
@@ -23,12 +28,25 @@ class MazeRobot {
     }
 
     void readSensors() {
-      v1 = analogRead(sensorV1) > 500;
-      v2 = analogRead(sensorV2) > 500;
-      h1 = analogRead(sensorH1) > 500;
-      h2 = analogRead(sensorH2) > 500;
-      h3 = analogRead(sensorH3) > 500;
-      h4 = analogRead(sensorH4) > 500;
+      // Read digital sensors (HIGH = 1, LOW = 0)
+      v1 = digitalRead(sensorV1);
+      v2 = digitalRead(sensorV2);
+      h1 = digitalRead(sensorH1);
+      h2 = digitalRead(sensorH2);
+      h3 = digitalRead(sensorH3);
+      h4 = digitalRead(sensorH4);
+    }
+
+    float readProximity() {
+      // Send ultrasonic pulse
+      digitalWrite(proximitySensorTrig, HIGH);
+      delayMicroseconds(10);
+      digitalWrite(proximitySensorTrig, LOW);
+
+      // Measure echo pulse duration
+      long duration = pulseIn(proximitySensorEcho, HIGH);
+      // Calculate distance in cm
+      return (duration * 0.034) / 2;
     }
 
     void moveForward() {
@@ -45,40 +63,31 @@ class MazeRobot {
       motorRight.setSpeed(200);
       motorLeft.run(BACKWARD);
       motorRight.run(FORWARD);
-    
-      // Delay for turning left
       delay(500); // Adjust the delay value based on the required turn angle
-    
       motorLeft.run(RELEASE);
       motorRight.run(RELEASE);
       logPath("L");
     }
-    
+
     void turnRight() {
       Serial.println("RIGHT TURN");
       motorLeft.setSpeed(200);
       motorRight.setSpeed(150);
       motorLeft.run(FORWARD);
       motorRight.run(BACKWARD);
-    
-      // Delay for turning right
       delay(500); // Adjust the delay value based on the required turn angle
-    
       motorLeft.run(RELEASE);
       motorRight.run(RELEASE);
       logPath("R");
     }
-    
+
     void backTurn() {
       Serial.println("BACK TURN");
       motorLeft.setSpeed(200);
       motorRight.setSpeed(200);
       motorLeft.run(BACKWARD);
       motorRight.run(FORWARD);
-    
-      // Delay for a 180-degree back turn
       delay(1000); // Adjust this delay for a complete 180-degree turn
-    
       motorLeft.run(RELEASE);
       motorRight.run(RELEASE);
       logPath("B");
@@ -93,76 +102,40 @@ class MazeRobot {
       path += move;
     }
 
-    void retrack() {
-      // If a horizontal sensor activates, correct position
-      if (h1 || h2 || h3 || h4) {
-        moveForward();
-      }
-    }
-
     void handleEnd() {
       stopRobot();
       Serial.println("Reached endpoint!");
-      optimizePath();
+      Serial.println(path);
     }
 
-    void handleIntersection() {
-      // Cross intersection logic
-      if (h1 && h2 && h3 && h4 && v1 && v2) {
-        turnLeft(); // Default action for cross
-      }
-    }
-
-    void handleTurn() {
-      // Left turn
-      if (h1 && !h2 && !h3 && !h4 && !v2 && v1) {
-        turnLeft();
-      }
-      // Right turn
-      else if (!h1 && !h2 && !h3 && h4 && !v2 && v1) {
-        turnRight();
-      }
-      // T-left
-      else if (v1 && v2 && !h1 && !h2 && !h3 && h4) {
-        turnRight();
-      }
-      // T-right
-      else if (v1 && v2 && h1 && !h2 && !h3 && !h4) {
-        turnLeft();
+    void handleProximity() {
+      float distance = readProximity();
+      if (distance < OBSTACLE_DISTANCE) {
+        Serial.println("Obstacle detected!");
+        backTurn(); // Treat obstacle like a dead-end and turn around
       }
     }
 
     void handlePath() {
-      // Straight deadend
+      handleProximity(); // Check for obstacles
+      
+      // Straight dead-end
       if (v1 && !v2 && h1 && h2 && h3 && h4) {
         backTurn();
       }
-      // T-shape
-      else if (v1 && !v2 && h1 && h4 && !h2 && !h3) {
-        handleTurn();
+      // Left or right turns
+      else if ((h1 && h2) || (h2 && h3)) {
+        if (h1) turnLeft();
+        else turnRight();
       }
       // Cross
       else if (v1 && v2 && h1 && h2 && h3 && h4) {
-        handleIntersection();
+        turnLeft(); // Default action for cross
       }
       // Default: Move forward or retrack
       else {
-        retrack();
+        moveForward();
       }
-    }
-
-    void optimizePath() {
-      String optimizedPath = path;
-      optimizedPath.replace("LBL", "F");
-      optimizedPath.replace("LBR", "B");
-      optimizedPath.replace("RBL", "B");
-      optimizedPath.replace("LBF", "R");
-      optimizedPath.replace("RBR", "F");
-      optimizedPath.replace("RBF", "L");
-      optimizedPath.replace("FBL", "R");
-      optimizedPath.replace("FBR", "L");
-      optimizedPath.replace("FBF", "B");
-      Serial.println("Optimized Path: " + optimizedPath);
     }
 };
 
@@ -170,6 +143,18 @@ MazeRobot robot;
 
 void setup() {
   Serial.begin(9600);
+
+  // Initialize sensors
+  pinMode(sensorV1, INPUT);
+  pinMode(sensorV2, INPUT);
+  pinMode(sensorH1, INPUT);
+  pinMode(sensorH2, INPUT);
+  pinMode(sensorH3, INPUT);
+  pinMode(sensorH4, INPUT);
+  pinMode(proximitySensorTrig, OUTPUT);
+  pinMode(proximitySensorEcho, INPUT);
+
+  // Stop the robot initially
   robot.stopRobot();
 }
 
