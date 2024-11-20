@@ -93,17 +93,10 @@ class MazeRobot {
       path += move;
     }
 
-    void retrack() {
-      // If a horizontal sensor activates, correct position
-      if (h1 || h2 || h3 || h4) {
-        moveForward();
-      }
-    }
-
     void handleEnd() {
       stopRobot();
       Serial.println("Reached endpoint!");
-      optimizePath();
+      println(path)
     }
 
     void handleIntersection() {
@@ -115,19 +108,19 @@ class MazeRobot {
 
     void handleTurn() {
       // Left turn
-      if (h1 && !h2 && !h3 && !h4 && !v2 && v1) {
+      if (h1 && h2 && !h3 && !h4 && !v2 && v1) {
         turnLeft();
       }
       // Right turn
-      else if (!h1 && !h2 && !h3 && h4 && !v2 && v1) {
+      else if (!h1 && !h2 && h3 && h4 && !v2 && v1) {
         turnRight();
       }
       // T-left
-      else if (v1 && v2 && !h1 && !h2 && !h3 && h4) {
-        turnRight();
+      else if (v1 && v2 && !h1 && !h2 && h3 && h4) {
+        moveForward();
       }
       // T-right
-      else if (v1 && v2 && h1 && !h2 && !h3 && !h4) {
+      else if (v1 && v2 && h1 && h2 && !h3 && !h4) {
         turnLeft();
       }
     }
@@ -137,8 +130,8 @@ class MazeRobot {
       if (v1 && !v2 && h1 && h2 && h3 && h4) {
         backTurn();
       }
-      // T-shape
-      else if (v1 && !v2 && h1 && h4 && !h2 && !h3) {
+      // Turns
+      else if (( h1 && h2) || (h2 && h3)) {
         handleTurn();
       }
       // Cross
@@ -147,23 +140,23 @@ class MazeRobot {
       }
       // Default: Move forward or retrack
       else {
-        retrack();
+        moveForward();
       }
     }
 
-    void optimizePath() {
-      String optimizedPath = path;
-      optimizedPath.replace("LBL", "F");
-      optimizedPath.replace("LBR", "B");
-      optimizedPath.replace("RBL", "B");
-      optimizedPath.replace("LBF", "R");
-      optimizedPath.replace("RBR", "F");
-      optimizedPath.replace("RBF", "L");
-      optimizedPath.replace("FBL", "R");
-      optimizedPath.replace("FBR", "L");
-      optimizedPath.replace("FBF", "B");
-      Serial.println("Optimized Path: " + optimizedPath);
-    }
+//    void optimizePath() {
+//      String optimizedPath = path;
+//      optimizedPath.replace("LBL", "F");
+//      optimizedPath.replace("LBR", "B");
+//      optimizedPath.replace("RBL", "B");
+//      optimizedPath.replace("LBF", "R");
+//      optimizedPath.replace("RBR", "F");
+//      optimizedPath.replace("RBF", "L");
+//      optimizedPath.replace("FBL", "R");
+//      optimizedPath.replace("FBR", "L");
+//      optimizedPath.replace("FBF", "B");
+//      Serial.println("Optimized Path: " + optimizedPath);
+//    }
 };
 
 MazeRobot robot;
