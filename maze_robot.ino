@@ -170,7 +170,8 @@ class MazeRobot {
         moveForward();
       }
     }
-};
+  };
+}
 
 MazeRobot robot;
 
