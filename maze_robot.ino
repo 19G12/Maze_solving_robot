@@ -9,7 +9,6 @@ const int sensorH3 = 6;  // Inner right horizontal
 const int sensorH4 = 7;  // Rightmost horizontal
 const int proximitySensorPin = 8; // IR proximity sensor pin
 
-
 // Motor setup
 AF_DCMotor motorLeft(3);  // Left motor (M3)
 AF_DCMotor motorRight(4); // Right motor (M4)
@@ -26,7 +25,6 @@ class MazeRobot {
     }
 
     void readSensors() {
-      obstacleDetected = digitalRead(proximitySensorPin) == HIGH;
       // Read digital sensors (HIGH = 1, LOW = 0)
       v1 = digitalRead(sensorV1);
       v2 = digitalRead(sensorV2);
@@ -59,7 +57,6 @@ class MazeRobot {
       logPath("L");
     }
 
-
     void turnRight() {
       Serial.println("RIGHT TURN");
       motorLeft.setSpeed(200);
@@ -71,7 +68,6 @@ class MazeRobot {
       motorRight.run(RELEASE);
       logPath("R");
     }
-
 
     void backTurn() {
       Serial.println("BACK TURN");
@@ -100,43 +96,20 @@ class MazeRobot {
       Serial.println(path);
     }
 
-    void handleIntersection() {
-      // Cross intersection logic
-      if (h1 && h2 && h3 && h4 && v1 && v2) {
-        turnLeft(); // Default action for cross
-      }
-    }
-
-    void handleTurn() {
-      // Left turn
-      if (h1 && h2 && !h3 && !h4 && !v2 && v1) {
-        turnLeft();
-      }
-      // Right turn
-      else if (!h1 && !h2 && h3 && h4 && !v2 && v1) {
-        turnRight();
-      }
-      // T-left
-      else if (v1 && v2 && !h1 && !h2 && h3 && h4) {
-        moveForward();
-      }
-      // T-right
-      else if (v1 && v2 && h1 && h2 && !h3 && !h4) {
-        turnLeft();
+    void handleProximity() {
+      if (obstacleDetected) {
+        Serial.println("Obstacle detected!");
+        backTurn(); // Treat obstacle like a dead-end and turn around
       }
     }
 
     void handlePath() {
       handleProximity(); // Check for obstacles
-            
-      // Straight dead--end
+      
+      // Straight dead-end
       if (v1 && !v2 && h1 && h2 && h3 && h4) {
         backTurn();
       }
-      // Left or right turns
-      else if ((h1 && h2) || (h2 && h3)) {
-        if (h1) turnLeft();
-        else turnRight();
       // Left or right turns
       else if ((h1 && h2) || (h2 && h3)) {
         if (h1) turnLeft();
@@ -145,15 +118,13 @@ class MazeRobot {
       // Cross
       else if (v1 && v2 && h1 && h2 && h3 && h4) {
         turnLeft(); // Default action for cross
-        turnLeft(); // Default action for cross
       }
       // Default: Move forward or retrack
       else {
         moveForward();
       }
     }
-  };
-}
+};
 
 MazeRobot robot;
 
