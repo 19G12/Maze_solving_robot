@@ -96,10 +96,29 @@ class MazeRobot {
       Serial.println(path);
     }
 
-    void handleProximity() {
-      if (obstacleDetected) {
-        Serial.println("Obstacle detected!");
-        backTurn(); // Treat obstacle like a dead-end and turn around
+    void handleIntersection() {
+      // Cross intersection logic
+      if (h1 && h2 && h3 && h4 && v1 && v2) {
+        turnLeft(); // Default action for cross
+      }
+    }
+
+    void handleTurn() {
+      // Left turn
+      if (h1 && h2 && !h3 && !h4 && !v2 && v1) {
+        turnLeft();
+      }
+      // Right turn
+      else if (!h1 && !h2 && h3 && h4 && !v2 && v1) {
+        turnRight();
+      }
+      // T-left
+      else if (v1 && v2 && !h1 && !h2 && h3 && h4) {
+        moveForward();
+      }
+      // T-right
+      else if (v1 && v2 && h1 && h2 && !h3 && !h4) {
+        turnLeft();
       }
     }
 
