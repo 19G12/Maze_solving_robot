@@ -7,20 +7,17 @@ const int sensorH1 = 4;  // Leftmost horizontal
 const int sensorH2 = 5;  // Inner left horizontal
 const int sensorH3 = 6;  // Inner right horizontal
 const int sensorH4 = 7;  // Rightmost horizontal
-const int proximitySensorTrig = 8; // Proximity sensor TRIG pin
-const int proximitySensorEcho = 9; // Proximity sensor ECHO pin
+const int proximitySensorPin = 8; // IR proximity sensor pin
 
 // Motor setup
 AF_DCMotor motorLeft(3);  // Left motor (M3)
 AF_DCMotor motorRight(4); // Right motor (M4)
 
-// Constants
-const int OBSTACLE_DISTANCE = 15; // Minimum distance to an obstacle in cm
-
 // Robot class
 class MazeRobot {
   public:
     int v1, v2, h1, h2, h3, h4; // Sensor readings
+    bool obstacleDetected;      // Proximity sensor reading
     String path;                // Path log
 
     MazeRobot() {
@@ -35,18 +32,9 @@ class MazeRobot {
       h2 = digitalRead(sensorH2);
       h3 = digitalRead(sensorH3);
       h4 = digitalRead(sensorH4);
-    }
 
-    float readProximity() {
-      // Send ultrasonic pulse
-      digitalWrite(proximitySensorTrig, HIGH);
-      delayMicroseconds(10);
-      digitalWrite(proximitySensorTrig, LOW);
-
-      // Measure echo pulse duration
-      long duration = pulseIn(proximitySensorEcho, HIGH);
-      // Calculate distance in cm
-      return (duration * 0.034) / 2;
+      // Read IR proximity sensor
+      obstacleDetected = digitalRead(proximitySensorPin) == HIGH;
     }
 
     void moveForward() {
@@ -109,8 +97,7 @@ class MazeRobot {
     }
 
     void handleProximity() {
-      float distance = readProximity();
-      if (distance < OBSTACLE_DISTANCE) {
+      if (obstacleDetected) {
         Serial.println("Obstacle detected!");
         backTurn(); // Treat obstacle like a dead-end and turn around
       }
@@ -151,8 +138,7 @@ void setup() {
   pinMode(sensorH2, INPUT);
   pinMode(sensorH3, INPUT);
   pinMode(sensorH4, INPUT);
-  pinMode(proximitySensorTrig, OUTPUT);
-  pinMode(proximitySensorEcho, INPUT);
+  pinMode(proximitySensorPin, INPUT);
 
   // Stop the robot initially
   robot.stopRobot();
