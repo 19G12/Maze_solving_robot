@@ -8,6 +8,14 @@ const int sensorH2 = 5;  // Inner left horizontal
 const int sensorH3 = 6;  // Inner right horizontal
 const int sensorH4 = 7;  // Rightmost horizontal
 const int proximitySensorPin = 8; // IR proximity sensor pin
+// Sensor and Motor Pins (Digital Pins for Raspberry Pi Pico)
+const int sensorV1 = 2;  // Vertical bottom
+const int sensorV2 = 3;  // Vertical top
+const int sensorH1 = 4;  // Leftmost horizontal
+const int sensorH2 = 5;  // Inner left horizontal
+const int sensorH3 = 6;  // Inner right horizontal
+const int sensorH4 = 7;  // Rightmost horizontal
+const int proximitySensorPin = 8; // IR proximity sensor pin
 
 // Motor setup
 AF_DCMotor motorLeft(3);  // Left motor (M3)
@@ -25,6 +33,16 @@ class MazeRobot {
     }
 
     void readSensors() {
+      // Read digital sensors (HIGH = 1, LOW = 0)
+      v1 = digitalRead(sensorV1);
+      v2 = digitalRead(sensorV2);
+      h1 = digitalRead(sensorH1);
+      h2 = digitalRead(sensorH2);
+      h3 = digitalRead(sensorH3);
+      h4 = digitalRead(sensorH4);
+
+      // Read IR proximity sensor
+      obstacleDetected = digitalRead(proximitySensorPin) == HIGH;
       // Read digital sensors (HIGH = 1, LOW = 0)
       v1 = digitalRead(sensorV1);
       v2 = digitalRead(sensorV2);
@@ -57,6 +75,7 @@ class MazeRobot {
       logPath("L");
     }
 
+
     void turnRight() {
       Serial.println("RIGHT TURN");
       motorLeft.setSpeed(200);
@@ -68,6 +87,7 @@ class MazeRobot {
       motorRight.run(RELEASE);
       logPath("R");
     }
+
 
     void backTurn() {
       Serial.println("BACK TURN");
@@ -125,7 +145,9 @@ class MazeRobot {
     void handlePath() {
       handleProximity(); // Check for obstacles
       
-      // Straight dead-end
+      handleProximity(); // Check for obstacles
+      
+      // Straight dead--end
       if (v1 && !v2 && h1 && h2 && h3 && h4) {
         backTurn();
       }
@@ -133,9 +155,14 @@ class MazeRobot {
       else if ((h1 && h2) || (h2 && h3)) {
         if (h1) turnLeft();
         else turnRight();
+      // Left or right turns
+      else if ((h1 && h2) || (h2 && h3)) {
+        if (h1) turnLeft();
+        else turnRight();
       }
       // Cross
       else if (v1 && v2 && h1 && h2 && h3 && h4) {
+        turnLeft(); // Default action for cross
         turnLeft(); // Default action for cross
       }
       // Default: Move forward or retrack
@@ -149,6 +176,17 @@ MazeRobot robot;
 
 void setup() {
   Serial.begin(9600);
+
+  // Initialize sensors
+  pinMode(sensorV1, INPUT);
+  pinMode(sensorV2, INPUT);
+  pinMode(sensorH1, INPUT);
+  pinMode(sensorH2, INPUT);
+  pinMode(sensorH3, INPUT);
+  pinMode(sensorH4, INPUT);
+  pinMode(proximitySensorPin, INPUT);
+
+  // Stop the robot initially
 
   // Initialize sensors
   pinMode(sensorV1, INPUT);
