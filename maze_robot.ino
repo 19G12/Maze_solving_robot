@@ -7,7 +7,6 @@ const int sensorH1 = A2; // Leftmost horizontal
 const int sensorH2 = A3; // Inner left horizontal
 const int sensorH3 = A4; // Inner right horizontal
 const int sensorH4 = A5; // Rightmost horizontal
-const int proximitySensor = 8; // Proximity sensor for dead-ends
 
 // Motor setup
 AF_DCMotor motorLeft(3);  // Left motor (M3)
@@ -16,8 +15,8 @@ AF_DCMotor motorRight(4); // Right motor (M4)
 // Robot class
 class MazeRobot {
   public:
-    int v1, v2, h1, h2, h3, h4, proximity; // Sensor readings
-    String path;                           // Path log
+    int v1, v2, h1, h2, h3, h4; // Sensor readings
+    String path;                // Path log
 
     MazeRobot() {
       path = "";
@@ -30,42 +29,58 @@ class MazeRobot {
       h2 = analogRead(sensorH2) > 500;
       h3 = analogRead(sensorH3) > 500;
       h4 = analogRead(sensorH4) > 500;
-      proximity = digitalRead(proximitySensor);
     }
 
     void moveForward() {
+      Serial.println("FORWARD");
       motorLeft.setSpeed(200);
       motorRight.setSpeed(200);
       motorLeft.run(FORWARD);
       motorRight.run(FORWARD);
-      logPath("F");
     }
 
     void turnLeft() {
+      Serial.println("LEFT TURN");
       motorLeft.setSpeed(150);
       motorRight.setSpeed(200);
       motorLeft.run(BACKWARD);
       motorRight.run(FORWARD);
-      delay(400);
+    
+      // Delay for turning left
+      delay(500); // Adjust the delay value based on the required turn angle
+    
+      motorLeft.run(RELEASE);
+      motorRight.run(RELEASE);
       logPath("L");
     }
-
+    
     void turnRight() {
+      Serial.println("RIGHT TURN");
       motorLeft.setSpeed(200);
       motorRight.setSpeed(150);
       motorLeft.run(FORWARD);
       motorRight.run(BACKWARD);
-      delay(400);
+    
+      // Delay for turning right
+      delay(500); // Adjust the delay value based on the required turn angle
+    
+      motorLeft.run(RELEASE);
+      motorRight.run(RELEASE);
       logPath("R");
     }
-
-    void turnBack() {
-      // Back turn (180-degree turn)
+    
+    void backTurn() {
+      Serial.println("BACK TURN");
       motorLeft.setSpeed(200);
       motorRight.setSpeed(200);
       motorLeft.run(BACKWARD);
-      motorRight.run(BACKWARD);
-      delay(1000); // Adjust the time to get a full 180-degree turn
+      motorRight.run(FORWARD);
+    
+      // Delay for a 180-degree back turn
+      delay(1000); // Adjust this delay for a complete 180-degree turn
+    
+      motorLeft.run(RELEASE);
+      motorRight.run(RELEASE);
       logPath("B");
     }
 
@@ -85,12 +100,16 @@ class MazeRobot {
       }
     }
 
-    void handleDeadEnd() {
-      if (proximity) {
-        stopRobot();
-        delay(1000);
-        turnBack(); // Back turn for dead-end handling
-        logPath("B");
+    void handleEnd() {
+      stopRobot();
+      Serial.println("Reached endpoint!");
+      optimizePath();
+    }
+
+    void handleIntersection() {
+      // Cross intersection logic
+      if (h1 && h2 && h3 && h4 && v1 && v2) {
+        turnLeft(); // Default action for cross
       }
     }
 
@@ -103,27 +122,20 @@ class MazeRobot {
       else if (!h1 && !h2 && !h3 && h4 && !v2 && v1) {
         turnRight();
       }
-    }
-
-    void handleIntersection() {
       // T-left
-      if (v1 && v2 && !h1 && !h2 && !h3 && h4) {
+      else if (v1 && v2 && !h1 && !h2 && !h3 && h4) {
         turnRight();
       }
       // T-right
       else if (v1 && v2 && h1 && !h2 && !h3 && !h4) {
         turnLeft();
       }
-      // Cross intersection
-      else if (h1 && h2 && h3 && h4 && v1 && v2) {
-        turnLeft(); // Default action for cross
-      }
     }
 
     void handlePath() {
       // Straight deadend
       if (v1 && !v2 && h1 && h2 && h3 && h4) {
-        moveForward();
+        backTurn();
       }
       // T-shape
       else if (v1 && !v2 && h1 && h4 && !h2 && !h3) {
@@ -141,61 +153,16 @@ class MazeRobot {
 
     void optimizePath() {
       String optimizedPath = path;
-      int changes;
-      do {
-        changes = 0;
-        // Sliding window optimization
-        optimizedPath = slidingWindow(optimizedPath);
-        changes++;
-      } while (changes > 0);
-
+      optimizedPath.replace("LBL", "F");
+      optimizedPath.replace("LBR", "B");
+      optimizedPath.replace("RBL", "B");
+      optimizedPath.replace("LBF", "R");
+      optimizedPath.replace("RBR", "F");
+      optimizedPath.replace("RBF", "L");
+      optimizedPath.replace("FBL", "R");
+      optimizedPath.replace("FBR", "L");
+      optimizedPath.replace("FBF", "B");
       Serial.println("Optimized Path: " + optimizedPath);
-      path = optimizedPath;
-    }
-
-    String slidingWindow(String path) {
-      // Optimized path mapping
-      String opt_path[] = {
-        "LBL", "F", // Left + Left -> Forward
-        "LBR", "B", // Left + Right -> Back
-        "RBL", "B", // Right + Left -> Back
-        "LBF", "R", // Left + Back -> Right
-        "RBR", "F", // Right + Back -> Forward
-        "RBF", "L", // Right + Forward -> Left
-        "FBL", "R", // Forward + Left -> Right
-        "FBR", "L", // Forward + Right -> Left
-        "FBF", "B"  // Forward + Forward -> Back
-      };
-
-      for (int i = 0; i < path.length() - 2; i++) {
-        String window = path.substring(i, i + 3);
-        // Check if the window matches any optimized path and replace
-        for (int j = 0; j < sizeof(opt_path) / sizeof(opt_path[0]); j += 2) {
-          if (window == opt_path[j]) {
-            path.replace(window, opt_path[j + 1]);
-          }
-        }
-      }
-      return path;
-    }
-
-    void executeOptimizedPath() {
-      for (int i = 0; i < path.length(); i++) {
-        char move = path[i];
-        if (move == 'F') moveForward();
-        if (move == 'L') turnLeft();
-        if (move == 'R') turnRight();
-        if (move == 'B') turnBack(); // Execute back turn
-        delay(500); // Adjust delay for robot speed
-      }
-      stopRobot();
-    }
-
-    void handleEnd() {
-      stopRobot();
-      Serial.println("Reached endpoint!");
-      optimizePath();
-      executeOptimizedPath();
     }
 };
 
@@ -216,6 +183,5 @@ void loop() {
   }
 
   // Handle the maze logic
-  robot.handleDeadEnd(); // Check for dead-end
   robot.handlePath();
 }
