@@ -1,7 +1,7 @@
-const int LMP = 13; // Left motor backward
-const int LMN = 12; // Left motor forward
-const int RMP = 11; // Right motor forward
-const int RMN = 10; // Right motor backward
+const int RMN = 13; // Left motor backward
+const int RMP = 12; // Left motor forward
+const int LMN = 11; // Right motor forward
+const int LMP = 10; // Right motor backward 
 
 // Define sensor pins
 const int rightmost = 0;
@@ -56,54 +56,51 @@ void loop() {
   Serial.println(sensorValues[5]);
 
   
-    if (sensorValues[1] == WHITE && sensorValues[2] == BLACK && sensorValues[5] == BLACK && sensorValues[3] == WHITE) {
-      forward();
-    } else if(sensorValues[1] == WHITE && sensorValues[2] == WHITE && sensorValues[5] == BLACK && sensorValues[3] == WHITE){
+    if ((sensorValues[0] && sensorValues[1]  && !sensorValues[3] && !sensorValues[4] && sensorValues[5]) || (sensorValues[0] && sensorValues[1] && !sensorValues[2]  && sensorValues[3] && sensorValues[4] && sensorValues[5])){
         stop();
-        delay(250);
-        turnBack();
-        delay(2000);
-        stop();
-        // T-left and Left
-      } else if(sensorValues[0] == BLACK && sensorValues[1] == BLACK && (sensorValues[2] == BLACK || sensorValues[2] == WHITE) && sensorValues[3] == WHITE && sensorValues[4] == WHITE && sensorValues[5] == BLACK){
-          stop();
-          delay(250);
-          
+          delay(50);
           turnLeft();
-          while (!(sensorValues[0] == BLACK && sensorValues[1] == BLACK && sensorValues[2] == BLACK && (sensorValues[5] == WHITE || sensorValues[5] == BLACK)) ){
+          while (!(sensorValues[0] && sensorValues[1] && sensorValues[2] && (!sensorValues[5] || sensorValues[5])) ){
             Serial.println("Turning left");
             lineFollowing(sensorValues);
             delay(10);
            }
           forward();
-          while ((sensorValues[0] == BLACK && sensorValues[1] == BLACK && sensorValues[2] == BLACK && (sensorValues[3] == WHITE || sensorValues[3] == BLACK)) ){
+          while ((sensorValues[0] && sensorValues[1] && sensorValues[2] && (!sensorValues[3] || sensorValues[3])) ){
             Serial.println("Forward");
             lineFollowing(sensorValues);
            }
-           
+    }
+    else if(!sensorValues[0] && !sensorValues[1]  && sensorValues[2]  && sensorValues[5]  &&(( !sensorValues[3] && !sensorValues[4]) || ( sensorValues[3] && sensorValues[4]))){
+        forward();
+    }
+    else if (!sensorValues[0] && !sensorValues[1] && !sensorValues[2] && sensorValues[5] && !sensorValues[3] && !sensorValues[4]) {
+      stop();
+      delay(250);
+      turnBack();
+      delay(2000);
+      stop();
+    }
+    else if(!sensorValues[0] && !sensorValues[1] && !sensorValues[2] && sensorValues[5] && sensorValues[3] && sensorValues[4]){
+        stop();
+        delay(50);
+        
+        turnRight();
+        while (!(!sensorValues[0] && !sensorValues[1] && sensorValues[2] && sensorValues[5] && sensorValues[3] && sensorValues[4]) ){
+          Serial.println("Turning right");
+          lineFollowing(sensorValues);
+          delay(10);
+         }
+        forward();
+        while ((!sensorValues[0] && !sensorValues[1] && sensorValues[2] && sensorValues[5] && sensorValues[3] && sensorValues[4])){
+          Serial.println("Forward");
+          lineFollowing(sensorValues);
+         }
+    }
+    else {
+        stop();
+        delay(500);
       }
-      // Right
-      else if(sensorValues[0] == WHITE && sensorValues[1] == WHITE && sensorValues[2] == WHITE && sensorValues[3] == BLACK && sensorValues[4] == BLACK && sensorValues[5] == BLACK){
-          stop();
-          delay(250);
-          
-          turnRight();
-          while (!(sensorValues[0] == WHITE && sensorValues[1] == WHITE && sensorValues[2] == BLACK && sensorValues[5] == BLACK && sensorValues[3] == BLACK && sensorValues[4] == BLACK) ){
-            Serial.println("Turning right");
-            lineFollowing(sensorValues);
-            delay(10);
-           }
-          forward();
-          while ((sensorValues[0] == WHITE && sensorValues[1] == WHITE && sensorValues[2] == BLACK && sensorValues[5] == BLACK && sensorValues[3] == BLACK && sensorValues[4] == BLACK)){
-            Serial.println("Forward");
-            lineFollowing(sensorValues);
-           }
-           
-      }
-      else {
-          stop();
-          delay(500);
-        }
 }
 
 // Function to read sensor values
@@ -149,15 +146,6 @@ void turnBack(){
   digitalWrite(RMP, HIGH);
   digitalWrite(RMN, LOW);
 }
-//
-//void turn_left_45() {
-//  Serial.println("Turn light Left");
-//  digitalWrite(LMN, HIGH);
-//  digitalWrite(LMF, LOW);
-//  digitalWrite(RMF, LOW);
-//  digitalWrite(RMB, HIGH);
-//  stop();
-//}
 
 void stop() {
   Serial.println("Stop");
