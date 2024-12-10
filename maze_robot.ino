@@ -1,7 +1,7 @@
-const int RMN = 13; // Left motor backward
-const int RMP = 12; // Left motor forward
-const int LMN = 11; // Right motor forward
-const int LMP = 10; // Right motor backward 
+const int RMN = 10; // Left motor backward
+const int RMP = 11; // Left motor forward
+const int LMN = 12; // Right motor forward
+const int LMP = 13; // Right motor backward 
 
 // Define sensor pins
 const int rightmost = 0;
@@ -12,10 +12,7 @@ const int leftmost = 4;
 const int back = 2;
 
 // Define global variables
-int speed = 45000; // Speed variable (not used here due to lack of PWM in example)
 int const TURN_DELAY = 2000;
-int const BLACK = 1;
-int const WHITE = 0;
 int sensorValues[6];
 
 // Setup method
@@ -41,8 +38,9 @@ void setup() {
 
 // Loop method
 void loop() {
-  lineFollowing(sensorValues); // Read sensor values
+  lineFollowing(sensorValues); 
 
+  
   Serial.print(sensorValues[0]);
   Serial.print(" ");
   Serial.print(sensorValues[1]);
@@ -55,31 +53,29 @@ void loop() {
   Serial.print(" ");
   Serial.println(sensorValues[5]);
 
-  
+    // Handle: Left + Left-T + T
     if ((sensorValues[0] && sensorValues[1]  && !sensorValues[3] && !sensorValues[4] && sensorValues[5]) || (sensorValues[0] && sensorValues[1] && !sensorValues[2]  && sensorValues[3] && sensorValues[4] && sensorValues[5])){
         stop();
           delay(50);
           turnLeft();
-          while (!(sensorValues[0] && sensorValues[1] && sensorValues[2] && (!sensorValues[5] || sensorValues[5])) ){
+          while (!(sensorValues[0] && sensorValues[1] && sensorValues[2])){
             Serial.println("Turning left");
             lineFollowing(sensorValues);
             delay(10);
            }
           forward();
-          while ((sensorValues[0] && sensorValues[1] && sensorValues[2] && (!sensorValues[3] || sensorValues[3])) ){
+          delay(100);
+          while (sensorValues[0] && sensorValues[1] && sensorValues[2]){
             Serial.println("Forward");
             lineFollowing(sensorValues);
            }
     }
+    // Handle: Straight + T-right
     else if(!sensorValues[0] && !sensorValues[1]  && sensorValues[2]  && sensorValues[5]  &&(( !sensorValues[3] && !sensorValues[4]) || ( sensorValues[3] && sensorValues[4]))){
         forward();
     }
     else if (!sensorValues[0] && !sensorValues[1] && !sensorValues[2] && sensorValues[5] && !sensorValues[3] && !sensorValues[4]) {
-      stop();
-      delay(250);
-      turnBack();
-      delay(2000);
-      stop();
+      // Change here
     }
     else if(!sensorValues[0] && !sensorValues[1] && !sensorValues[2] && sensorValues[5] && sensorValues[3] && sensorValues[4]){
         stop();
@@ -106,12 +102,13 @@ void loop() {
 // Function to read sensor values
 void lineFollowing(int sensorValues[]) {
   
-  sensorValues[0] = digitalRead(leftmost);
-  sensorValues[1] = digitalRead(left);
-  sensorValues[2] = digitalRead(middle);
-  sensorValues[3] = digitalRead(right);
-  sensorValues[4] = digitalRead(rightmost);
-  sensorValues[5] = digitalRead(back);
+  sensorValues[0] = !digitalRead(leftmost);
+  sensorValues[1] = !digitalRead(left);
+  sensorValues[2] = !digitalRead(middle);
+  sensorValues[3] = !digitalRead(right);
+  sensorValues[4] = !digitalRead(rightmost);
+  sensorValues[5] = !digitalRead(back);
+
 }
 
 // Motor control functions
@@ -133,14 +130,6 @@ void turnRight() {
 
 void turnLeft() {
   Serial.println("Turn Left");
-  digitalWrite(LMN, HIGH);
-  digitalWrite(LMP, LOW);
-  digitalWrite(RMP, HIGH);
-  digitalWrite(RMN, LOW);
-}
-
-void turnBack(){
-  Serial.println("Turn Back");
   digitalWrite(LMN, HIGH);
   digitalWrite(LMP, LOW);
   digitalWrite(RMP, HIGH);
