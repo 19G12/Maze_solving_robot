@@ -6,10 +6,10 @@ const int LMP = 10; // Right motor backward
 // Define sensor pins
 const int rightmost = 0;
 const int right = 1;
-const int middle = 2;
+const int middle = 7;
 const int left = 3;
 const int leftmost = 4;
-const int back = 7;
+const int back = 2;
 
 // Define global variables
 int speed = 45000; // Speed variable (not used here due to lack of PWM in example)
